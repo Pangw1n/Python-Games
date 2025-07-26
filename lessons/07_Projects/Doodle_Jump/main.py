@@ -1,4 +1,5 @@
 import pygame
+import random
 
 #SETTING
 SCREEN_WIDHT = 300
@@ -28,7 +29,7 @@ class Game:
         # Define player
         self.player = Player(self)
         self.platforms = pygame.sprite.Group()
-        self.platforms.add(Platform(self, (SCREEN_WIDHT - PLATFORM_WIDTH) / 2, PLATFORM_THICKNESS + 20))
+        self.next_y = PLATFORM_THICKNESS + 20
 
         self.running = True
         clock = pygame.time.Clock()
@@ -36,6 +37,8 @@ class Game:
         while self.running:
             # Update game objects
             self.player.update(self)
+
+            self.spawn_new_platforms()
 
             for platform in self.platforms:
                 platform.update(self)
@@ -57,8 +60,13 @@ class Game:
     def y_to_screen(self, y):
         return SCREEN_HEIGHT - (y - self.cam_y_pos)
     
-    def spawn_platform(self):
-        new_platform = Platform(self, (SCREEN_WIDHT - PLATFORM_WIDTH) / 2, PLATFORM_THICKNESS + 20)
+    def spawn_platform(self, y):
+        self.platforms.add(Platform(self, random.random() * SCREEN_WIDHT, y))
+        self.next_y = y + 50
+
+    def spawn_new_platforms(self):
+        if self.cam_y_pos + SCREEN_HEIGHT > self.next_y:
+            self.spawn_platform(self.next_y)
 
 
 
@@ -111,6 +119,9 @@ class Platform(GameObject):
 
     def update(self, game):
         super().update(game)
+        if self.y < game.cam_y_pos:
+            print("debug")
+            game.platforms.remove(self)
 
     def draw(self, screen):
         pygame.draw.rect(screen, BLACK, self)
