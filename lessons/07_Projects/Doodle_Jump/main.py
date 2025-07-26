@@ -4,14 +4,16 @@ import pygame
 SCREEN_WIDHT = 300
 SCREEN_HEIGHT = 400
 PLAYER_SIZE = 35
-PLATFORM_WIDTH = 50
+PLATFORM_WIDTH = 60
 PLATFORM_THICKNESS = 20
-SPEED = 20
+JUMP_SPEED = 16
 GRAVITY = -1
 GAME_SPEED = 15
 MAX_Y_DIFF = 200
 WHITE: tuple = (255, 255, 255)
 BLACK: tuple = (0, 0, 0)
+
+
 
 class Game:
     def __init__(self):
@@ -24,37 +26,68 @@ class Game:
 
     def start_game(self):
         # Define player
-        self.player = Player()
-        self.platforms = list()
-        self.platforms.append(Platform((SCREEN_WIDHT - PLATFORM_WIDTH) / 2, PLATFORM_THICKNESS + 20))
+        self.player = Player(self)
+        self.platforms = pygame.sprite.Group()
+        self.platforms.add(Platform(self, (SCREEN_WIDHT - PLATFORM_WIDTH) / 2, PLATFORM_THICKNESS + 20))
 
         self.running = True
-        self.clock = pygame.time.Clock()
+        clock = pygame.time.Clock()
 
         while self.running:
+            # Update game objects
             self.player.update(self)
+
+            for platform in self.platforms:
+                platform.update(self)
+            
+            # Check for collisions
+            collider = pygame.sprite.spritecollide(self.player, self.platforms, dokill=False)
+            if collider and self.player.y_vel <= 0:
+                self.player.jump(JUMP_SPEED)
 
             # Draw everything
             self.screen.fill(WHITE)
+            for sprite in self.platforms:
+                sprite.draw(self.screen)
             self.player.draw(self.screen)
-            for x in self.platforms:
-                x.update(self)
-                x.draw(self.screen)
-
             pygame.display.flip()
-            self.clock.tick(30)
+            clock.tick(30)
         pygame.quit
     
     def y_to_screen(self, y):
         return SCREEN_HEIGHT - (y - self.cam_y_pos)
+    
+    def spawn_platform(self):
+        new_platform = Platform(self, (SCREEN_WIDHT - PLATFORM_WIDTH) / 2, PLATFORM_THICKNESS + 20)
 
-class Player:
-    def __init__(self):
+
+
+class GameObject(pygame.sprite.Sprite):
+    def __init__(self, game, x, y, width, height):
+        super().__init__()
+        self.x = x
+        self.y = y
+        self.image = pygame.Surface((width, height))
+        self.image.fill(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = game.y_to_screen(y)
+
+    def update(self, game):
+        self.rect.x = self.x
+        self.rect.y = game.y_to_screen(self.y)
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, BLACK, self)
+
+
+
+class Player(GameObject):
+    def __init__(self, game):
         self.x_vel = 0
-        self.y_vel = 16
-        self.x = (SCREEN_WIDHT - PLAYER_SIZE) / 2
-        self.y = PLAYER_SIZE + PLATFORM_THICKNESS + 20
-        self.hitbox = pygame.Rect(self.x, self.y, PLAYER_SIZE, PLAYER_SIZE)
+        self.y_vel = JUMP_SPEED
+        super().__init__(game, (SCREEN_WIDHT - PLAYER_SIZE) / 2, PLAYER_SIZE + PLATFORM_THICKNESS + 20, PLAYER_SIZE, PLAYER_SIZE)
+        #self.hitbox = pygame.Rect(self.x, self.y, PLAYER_SIZE, PLAYER_SIZE)
 
     def update(self, game):
         self.y_vel += GRAVITY
@@ -62,25 +95,28 @@ class Player:
         self.y += self.y_vel
         if self.y > game.cam_y_pos + MAX_Y_DIFF:
             game.cam_y_pos = self.y - MAX_Y_DIFF
-        self.hitbox.x = self.x
-        self.hitbox.y = game.y_to_screen(self.y)
+        super().update(game)
         
     def draw(self, screen):
-        pygame.draw.rect(screen, BLACK, self.hitbox)
+        pygame.draw.rect(screen, BLACK, self)
 
-class Platform:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.hitbox = pygame.Rect(self.x, self.y, PLATFORM_WIDTH, PLATFORM_THICKNESS)
+    def jump(self, speed):
+        self.y_vel = speed
+
+
+
+class Platform(GameObject):
+    def __init__(self, game, x, y):
+        super().__init__(game, x, y, PLATFORM_WIDTH, PLATFORM_THICKNESS)
 
     def update(self, game):
-        self.hitbox.x = self.x
-        self.hitbox.y = game.y_to_screen(self.y)
+        super().update(game)
 
     def draw(self, screen):
-        pygame.draw.rect(screen, BLACK, self.hitbox)
+        pygame.draw.rect(screen, BLACK, self)
 
-game = Game()
-game.__init__()
-game.start_game()
+
+
+game1 = Game()
+game1.__init__()
+game1.start_game()
