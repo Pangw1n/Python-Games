@@ -7,6 +7,7 @@ SCREEN_HEIGHT = 400
 PLAYER_SIZE = 35
 PLATFORM_WIDTH = 60
 PLATFORM_THICKNESS = 20
+PLAYER_SPEED = 5
 JUMP_SPEED = 16
 GRAVITY = -1
 GAME_SPEED = 15
@@ -46,6 +47,7 @@ class Game:
             # Check for collisions
             collider = pygame.sprite.spritecollide(self.player, self.platforms, dokill=False)
             if collider and self.player.y_vel <= 0:
+                #print(collider)
                 self.player.jump(JUMP_SPEED)
 
             # Draw everything
@@ -92,14 +94,20 @@ class GameObject(pygame.sprite.Sprite):
 
 class Player(GameObject):
     def __init__(self, game):
-        self.x_vel = 0
         self.y_vel = JUMP_SPEED
         super().__init__(game, (SCREEN_WIDHT - PLAYER_SIZE) / 2, PLAYER_SIZE + PLATFORM_THICKNESS + 20, PLAYER_SIZE, PLAYER_SIZE)
         #self.hitbox = pygame.Rect(self.x, self.y, PLAYER_SIZE, PLAYER_SIZE)
 
     def update(self, game):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            print("debug")
+            self.x -= PLAYER_SPEED
+        if keys[pygame.K_RIGHT]:
+            print("debug")
+            self.x += PLAYER_SPEED
+        
         self.y_vel += GRAVITY
-        self.x += self.x_vel
         self.y += self.y_vel
         if self.y > game.cam_y_pos + MAX_Y_DIFF:
             game.cam_y_pos = self.y - MAX_Y_DIFF
@@ -120,7 +128,6 @@ class Platform(GameObject):
     def update(self, game):
         super().update(game)
         if self.y < game.cam_y_pos:
-            print("debug")
             game.platforms.remove(self)
 
     def draw(self, screen):
