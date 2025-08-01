@@ -7,7 +7,7 @@ SCREEN_HEIGHT = 400
 PLAYER_SIZE = 35
 PLATFORM_WIDTH = 60
 PLATFORM_THICKNESS = 20
-PLAYER_SPEED = 5
+PLAYER_SPEED = 10
 JUMP_SPEED = 16
 GRAVITY = -1
 GAME_SPEED = 15
@@ -36,6 +36,10 @@ class Game:
         clock = pygame.time.Clock()
 
         while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+
             # Update game objects
             self.player.update(self)
 
@@ -47,8 +51,10 @@ class Game:
             # Check for collisions
             collider = pygame.sprite.spritecollide(self.player, self.platforms, dokill=False)
             if collider and self.player.y_vel <= 0:
-                #print(collider)
-                self.player.jump(JUMP_SPEED)
+                for c in collider:
+                    if self.player.y > c.y:
+                        self.player.jump(JUMP_SPEED)
+                        break
 
             # Draw everything
             self.screen.fill(WHITE)
@@ -56,6 +62,7 @@ class Game:
                 sprite.draw(self.screen)
             self.player.draw(self.screen)
             pygame.display.flip()
+            pygame.event.pump()
             clock.tick(30)
         pygame.quit
     
@@ -80,12 +87,12 @@ class GameObject(pygame.sprite.Sprite):
         self.image = pygame.Surface((width, height))
         self.image.fill(BLACK)
         self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = game.y_to_screen(y)
+        self.rect.centerx = x
+        self.rect.centery = game.y_to_screen(y)
 
     def update(self, game):
-        self.rect.x = self.x
-        self.rect.y = game.y_to_screen(self.y)
+        self.rect.centerx = self.x
+        self.rect.centery = game.y_to_screen(self.y)
 
     def draw(self, screen):
         pygame.draw.rect(screen, BLACK, self)
@@ -95,17 +102,17 @@ class GameObject(pygame.sprite.Sprite):
 class Player(GameObject):
     def __init__(self, game):
         self.y_vel = JUMP_SPEED
-        super().__init__(game, (SCREEN_WIDHT - PLAYER_SIZE) / 2, PLAYER_SIZE + PLATFORM_THICKNESS + 20, PLAYER_SIZE, PLAYER_SIZE)
+        super().__init__(game, SCREEN_WIDHT / 2, 0, PLAYER_SIZE, PLAYER_SIZE)
         #self.hitbox = pygame.Rect(self.x, self.y, PLAYER_SIZE, PLAYER_SIZE)
 
     def update(self, game):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
-            print("debug")
             self.x -= PLAYER_SPEED
         if keys[pygame.K_RIGHT]:
-            print("debug")
             self.x += PLAYER_SPEED
+
+        self.x = self.x % SCREEN_WIDHT
         
         self.y_vel += GRAVITY
         self.y += self.y_vel
